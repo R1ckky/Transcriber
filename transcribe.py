@@ -1,6 +1,9 @@
 import speech_recognition as sr
 from os import path, makedirs
 from pydub import AudioSegment
+from docx import Document
+from docx.shared import Pt
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 # Define directory paths
 input_dir = "raw_audio"
@@ -32,7 +35,7 @@ print(f"Audio file converted to WAV: {output_file_path}")
 makedirs(transcription_dir, exist_ok=True)
 
 # Define the transcription file path
-transcription_file_name = file_name.rsplit(".", 1)[0] + ".txt"
+transcription_file_name = file_name.rsplit(".", 1)[0] + ".docx"
 transcription_file_path = path.join(transcription_dir, transcription_file_name)
 
 # Transcribe the audio file
@@ -46,11 +49,22 @@ with sr.AudioFile(AUDIO_FILE) as source:
     # Perform speech recognition
     try:
         transcript = r.recognize_google(audio)
-        print("Transcription: " + transcript)
 
-        # Export the transcript to a text file
-        with open(transcription_file_path, "w") as f:
-            f.write(transcript)
+        # Create a new Word document
+        doc = Document()
+        doc.add_paragraph(transcript)
+
+        # Apply formatting to the transcript
+        for paragraph in doc.paragraphs:
+            paragraph_format = paragraph.paragraph_format
+            paragraph_format.alignment = WD_PARAGRAPH_ALIGNMENT.JUSTIFY
+            for run in paragraph.runs:
+                font = run.font
+                font.size = Pt(12)
+                font.bold = False
+
+        # Save the transcript to a Word document
+        doc.save(transcription_file_path)
         print(f"Transcript exported to: {transcription_file_path}")
     except sr.UnknownValueError:
         print("Speech recognition could not understand audio")
